@@ -72,6 +72,7 @@ async def test_food_handler_saves_entry_after_analysis():
     assert saved == [FAKE_ESTIMATE]
 
 
+
 @pytest.mark.asyncio
 async def test_food_handler_responds_with_error_when_image_unrecognisable():
     interaction = _make_interaction(image_url="http://fake/food.jpg")

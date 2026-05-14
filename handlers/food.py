@@ -2,6 +2,7 @@ from typing import Callable
 
 from services.nutrition import analyse_food, FoodAnalysisError
 from db.storage import save_food_entry
+from utils.image import normalise_image_url
 
 
 async def handle_food(interaction, api_key: str, analyse_fn: Callable = None, save_fn: Callable = None):
@@ -18,7 +19,8 @@ async def handle_food(interaction, api_key: str, analyse_fn: Callable = None, sa
     await interaction.response.defer()
 
     try:
-        estimate = await analyse_fn(image_url=attachment.url, api_key=api_key)
+        image_url = await normalise_image_url(attachment.url)
+        estimate = await analyse_fn(image_url=image_url, api_key=api_key)
         msg = (
             f"🍽️ **{estimate.description}** （估算值）\n"
             f"熱量：{estimate.calories} kcal\n"

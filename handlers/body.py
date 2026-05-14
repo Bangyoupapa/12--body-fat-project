@@ -4,6 +4,7 @@ from services.body_composition import (
     analyse_inbody, create_composition_entry, InBodyParseError
 )
 from db.storage import save_inbody_entry, save_weight_entry
+from utils.image import normalise_image_url
 
 
 async def handle_inbody(interaction, api_key: str, analyse_fn: Callable = None, save_fn: Callable = None):
@@ -20,7 +21,8 @@ async def handle_inbody(interaction, api_key: str, analyse_fn: Callable = None, 
     await interaction.response.defer()
 
     try:
-        result = await analyse_fn(image_url=attachment.url, api_key=api_key)
+        image_url = await normalise_image_url(attachment.url)
+        result = await analyse_fn(image_url=image_url, api_key=api_key)
         msg = (
             f"📊 **InBody 數據已記錄**\n"
             f"體重：{result.weight_kg} kg　BMI：{result.bmi}\n"
