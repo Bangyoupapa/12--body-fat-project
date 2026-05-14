@@ -50,10 +50,13 @@ async def analyse_inbody(image_url: str, api_key: str) -> InBodyResult:
         max_tokens=256,
     )
     try:
-        content = re.sub(r"```[a-z]*\n?|\n?```", "", response.choices[0].message.content).strip()
+        raw = response.choices[0].message.content
+        print(f"[inbody] raw response: {raw!r}", flush=True)
+        content = re.sub(r"```[a-z]*\n?|\n?```", "", raw).strip()
         data = json.loads(content)
         return InBodyResult(**{k: v for k, v in data.items() if v is not None})
     except (json.JSONDecodeError, TypeError, KeyError) as exc:
+        print(f"[inbody] parse error: {exc!r}", flush=True)
         raise InBodyParseError("無法從照片中解析 InBody 數據") from exc
 
 
