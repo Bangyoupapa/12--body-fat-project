@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass, field
 
 import openai
@@ -37,7 +38,8 @@ async def parse_exercise(text: str, api_key: str) -> ExerciseEntry:
         max_tokens=512,
     )
     try:
-        data = json.loads(response.choices[0].message.content)
+        content = re.sub(r"```[a-z]*\n?|\n?```", "", response.choices[0].message.content).strip()
+        data = json.loads(content)
         exercises = [Exercise(**e) for e in data["exercises"]]
         return ExerciseEntry(exercises=exercises, raw_text=text)
     except (json.JSONDecodeError, TypeError, KeyError) as exc:

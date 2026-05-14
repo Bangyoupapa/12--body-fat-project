@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -49,7 +50,8 @@ async def analyse_inbody(image_url: str, api_key: str) -> InBodyResult:
         max_tokens=256,
     )
     try:
-        data = json.loads(response.choices[0].message.content)
+        content = re.sub(r"```[a-z]*\n?|\n?```", "", response.choices[0].message.content).strip()
+        data = json.loads(content)
         return InBodyResult(**{k: v for k, v in data.items() if v is not None})
     except (json.JSONDecodeError, TypeError, KeyError) as exc:
         raise InBodyParseError("無法從照片中解析 InBody 數據") from exc

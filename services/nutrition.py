@@ -1,4 +1,5 @@
 import json
+import re
 from dataclasses import dataclass
 
 import openai
@@ -40,7 +41,8 @@ async def analyse_food(image_url: str, api_key: str) -> FoodEstimate:
         max_tokens=256,
     )
     try:
-        data = json.loads(response.choices[0].message.content)
+        content = re.sub(r"```[a-z]*\n?|\n?```", "", response.choices[0].message.content).strip()
+        data = json.loads(content)
         return FoodEstimate(**data)
     except (json.JSONDecodeError, TypeError, KeyError) as exc:
         raise FoodAnalysisError("無法辨識圖片中的食物") from exc
