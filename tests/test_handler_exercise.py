@@ -29,12 +29,25 @@ async def test_exercise_handler_responds_with_exercise_summary():
     async def fake_parse(text, api_key):
         return FAKE_ENTRY
 
-    await handle_exercise(interaction, api_key="test-key", parse_fn=fake_parse)
+    await handle_exercise(interaction, api_key="test-key", parse_fn=fake_parse, save_fn=lambda e: None)
 
     interaction.followup.send.assert_called_once()
     response_text = interaction.followup.send.call_args[0][0]
     assert "深蹲" in response_text
     assert "臥推" in response_text
+
+
+@pytest.mark.asyncio
+async def test_exercise_handler_saves_entry_after_parsing():
+    interaction = _make_interaction(text="深蹲 5×5 100kg")
+    saved = []
+
+    async def fake_parse(text, api_key):
+        return FAKE_ENTRY
+
+    await handle_exercise(interaction, api_key="test-key", parse_fn=fake_parse, save_fn=saved.append)
+
+    assert saved == [FAKE_ENTRY]
 
 
 @pytest.mark.asyncio
@@ -55,7 +68,7 @@ async def test_exercise_handler_responds_with_error_on_parse_failure():
     async def failing_parse(text, api_key):
         raise ExerciseParseError("無法解析")
 
-    await handle_exercise(interaction, api_key="test-key", parse_fn=failing_parse)
+    await handle_exercise(interaction, api_key="test-key", parse_fn=failing_parse, save_fn=lambda e: None)
 
     interaction.followup.send.assert_called_once()
     error_text = interaction.followup.send.call_args[0][0]

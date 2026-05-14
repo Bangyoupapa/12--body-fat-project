@@ -36,7 +36,7 @@ async def test_food_handler_responds_with_nutritional_summary():
     async def fake_analyse(image_url, api_key):
         return FAKE_ESTIMATE
 
-    await handle_food(interaction, api_key="test-key", analyse_fn=fake_analyse)
+    await handle_food(interaction, api_key="test-key", analyse_fn=fake_analyse, save_fn=lambda e: None)
 
     interaction.followup.send.assert_called_once()
     response_text = interaction.followup.send.call_args[0][0]
@@ -57,13 +57,29 @@ async def test_food_handler_responds_with_error_when_no_photo():
 
 
 @pytest.mark.asyncio
+async def test_food_handler_saves_entry_after_analysis():
+    interaction = _make_interaction(image_url="http://fake/food.jpg")
+    saved = []
+
+    async def fake_analyse(image_url, api_key):
+        return FAKE_ESTIMATE
+
+    def fake_save(estimate):
+        saved.append(estimate)
+
+    await handle_food(interaction, api_key="test-key", analyse_fn=fake_analyse, save_fn=fake_save)
+
+    assert saved == [FAKE_ESTIMATE]
+
+
+@pytest.mark.asyncio
 async def test_food_handler_responds_with_error_when_image_unrecognisable():
     interaction = _make_interaction(image_url="http://fake/food.jpg")
 
     async def failing_analyse(image_url, api_key):
         raise FoodAnalysisError("無法辨識")
 
-    await handle_food(interaction, api_key="test-key", analyse_fn=failing_analyse)
+    await handle_food(interaction, api_key="test-key", analyse_fn=failing_analyse, save_fn=lambda e: None)
 
     interaction.followup.send.assert_called_once()
     error_text = interaction.followup.send.call_args[0][0]

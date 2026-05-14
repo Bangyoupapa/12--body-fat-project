@@ -3,11 +3,14 @@ from typing import Callable
 from services.body_composition import (
     analyse_inbody, create_composition_entry, InBodyParseError
 )
+from db.storage import save_inbody_entry, save_weight_entry
 
 
-async def handle_inbody(interaction, api_key: str, analyse_fn: Callable = None):
+async def handle_inbody(interaction, api_key: str, analyse_fn: Callable = None, save_fn: Callable = None):
     if analyse_fn is None:
         analyse_fn = analyse_inbody
+    if save_fn is None:
+        save_fn = save_inbody_entry
 
     attachment = interaction.namespace.photo
     if attachment is None:
@@ -23,12 +26,15 @@ async def handle_inbody(interaction, api_key: str, analyse_fn: Callable = None):
             f"體重：{result.weight_kg} kg　BMI：{result.bmi}\n"
             f"體脂率：{result.body_fat_pct}%　肌肉量：{result.muscle_mass_kg} kg"
         )
+        save_fn(result)
         await interaction.followup.send(msg)
     except InBodyParseError:
         await interaction.followup.send("❌ 無法解析 InBody 報告，請確認照片清晰可讀。")
 
 
-async def handle_weight(interaction):
+async def handle_weight(interaction, save_fn: Callable = None):
+    if save_fn is None:
+        save_fn = save_weight_entry
     weight = interaction.namespace.weight
     height = interaction.namespace.height
 
@@ -38,6 +44,7 @@ async def handle_weight(interaction):
 
     if height:
         entry = create_composition_entry(weight_kg=weight, height_cm=height)
+        save_fn(entry)
         msg = (
             f"⚖️ **體重已記錄**\n"
             f"體重：{entry.weight_kg} kg　BMI：{entry.bmi}"

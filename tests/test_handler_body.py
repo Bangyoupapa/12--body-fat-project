@@ -33,12 +33,25 @@ async def test_inbody_handler_responds_with_body_composition():
     async def fake_analyse(image_url, api_key):
         return FAKE_INBODY
 
-    await handle_inbody(interaction, api_key="test-key", analyse_fn=fake_analyse)
+    await handle_inbody(interaction, api_key="test-key", analyse_fn=fake_analyse, save_fn=lambda r: None)
 
     interaction.followup.send.assert_called_once()
     response_text = interaction.followup.send.call_args[0][0]
     assert "18.5" in response_text
     assert "65.2" in response_text
+
+
+@pytest.mark.asyncio
+async def test_inbody_handler_saves_result_after_analysis():
+    interaction = _make_interaction(photo_url="http://fake/inbody.jpg")
+    saved = []
+
+    async def fake_analyse(image_url, api_key):
+        return FAKE_INBODY
+
+    await handle_inbody(interaction, api_key="test-key", analyse_fn=fake_analyse, save_fn=saved.append)
+
+    assert saved == [FAKE_INBODY]
 
 
 @pytest.mark.asyncio
@@ -55,9 +68,20 @@ async def test_inbody_handler_responds_with_error_when_no_photo():
 async def test_weight_handler_responds_with_bmi():
     interaction = _make_interaction(weight=75.0, height=175.0)
 
-    await handle_weight(interaction)
+    await handle_weight(interaction, save_fn=lambda e: None)
 
     interaction.response.send_message.assert_called_once()
     response_text = interaction.response.send_message.call_args[0][0]
     assert "75" in response_text
     assert "BMI" in response_text
+
+
+@pytest.mark.asyncio
+async def test_weight_handler_saves_entry_when_height_provided():
+    interaction = _make_interaction(weight=75.0, height=175.0)
+    saved = []
+
+    await handle_weight(interaction, save_fn=saved.append)
+
+    assert len(saved) == 1
+    assert saved[0].weight_kg == 75.0

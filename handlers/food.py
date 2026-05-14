@@ -1,11 +1,14 @@
 from typing import Callable
 
 from services.nutrition import analyse_food, FoodAnalysisError
+from db.storage import save_food_entry
 
 
-async def handle_food(interaction, api_key: str, analyse_fn: Callable = None):
+async def handle_food(interaction, api_key: str, analyse_fn: Callable = None, save_fn: Callable = None):
     if analyse_fn is None:
         analyse_fn = analyse_food
+    if save_fn is None:
+        save_fn = save_food_entry
 
     attachment = interaction.namespace.photo
     if attachment is None:
@@ -21,6 +24,7 @@ async def handle_food(interaction, api_key: str, analyse_fn: Callable = None):
             f"熱量：{estimate.calories} kcal\n"
             f"蛋白質：{estimate.protein_g}g　碳水：{estimate.carbs_g}g　脂肪：{estimate.fat_g}g"
         )
+        save_fn(estimate)
         await interaction.followup.send(msg)
     except FoodAnalysisError:
         await interaction.followup.send("❌ 無法辨識圖片中的食物，請換一張照片試試。")
