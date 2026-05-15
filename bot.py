@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from handlers.food import handle_food
 from handlers.exercise import handle_exercise
 from handlers.body import handle_inbody, handle_weight
+from handlers.undo import handle_undo
 
 load_dotenv()
 
@@ -44,6 +45,11 @@ async def weight_command(interaction: discord.Interaction, weight: float, height
     interaction.namespace.weight = weight
     interaction.namespace.height = height
     await handle_weight(interaction)
+
+
+@tree.command(name="undo", description="刪除最後一筆記錄")
+async def undo_command(interaction: discord.Interaction):
+    await handle_undo(interaction)
 
 
 @client.event

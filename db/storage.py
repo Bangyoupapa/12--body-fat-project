@@ -75,3 +75,38 @@ def save_health_metrics(steps: Optional[int], sleep_hours: Optional[float], clie
         "steps": steps,
         "sleep_hours": sleep_hours,
     }).execute()
+
+
+def get_last_entry(client=None) -> Optional[dict]:
+    if client is None:
+        client = _default_client()
+    candidates = []
+    for table, summary_fn in [
+        ("food_entries", lambda r: f"{r['description']}（{r['calories']} kcal）"),
+        ("exercise_entries", lambda r: r["raw_text"]),
+        ("composition_entries", lambda r: f"體重 {r['weight_kg']} kg（{r['source']}）"),
+    ]:
+        result = (
+            client.table(table)
+            .select("id, recorded_at, *")
+            .order("recorded_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if result.data:
+            row = result.data[0]
+            candidates.append({
+                "table": table,
+                "id": row["id"],
+                "summary": summary_fn(row),
+                "recorded_at": row["recorded_at"],
+            })
+    if not candidates:
+        return None
+    return max(candidates, key=lambda c: c["recorded_at"])
+
+
+def delete_entry(table: str, entry_id: str, client=None) -> None:
+    if client is None:
+        client = _default_client()
+    client.table(table).delete().eq("id", entry_id).execute()
